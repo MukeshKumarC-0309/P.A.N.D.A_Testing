@@ -3,5 +3,4 @@ pyjokes
 wikipedia
 requests
 tabulate
-mysql-connector-python
 python-dotenv

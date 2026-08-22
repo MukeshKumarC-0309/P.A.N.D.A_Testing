@@ -5,6 +5,9 @@
 password.txt
 rmr.txt
 
+# Local SQLite vault(s) — never commit a user's data
+*.db
+
 # Python
 __pycache__/
 *.pyc
