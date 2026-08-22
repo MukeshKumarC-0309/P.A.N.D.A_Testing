@@ -104,6 +104,50 @@ functions run only when invoked. So migration can proceed table-by-table
 7. First-run smoke test — fresh run creates the `.db` with empty tables;
    add/view/delete round-trips on one table.
 
+## Security & correctness hardening (post-migration)
+
+Separate review pass, after the SQLite migration. One fix at a time.
+
+1. **Password hashing → bcrypt** (`panda/auth.py`). Was unsalted
+   SHA-256 (fast, no salt, rainbow-table-friendly). Now
+   `bcrypt.hashpw`/`bcrypt.checkpw` — per-password random salt,
+   deliberately slow. `_hash()` helper removed; `bcrypt` added to
+   `requirements.txt`. Old SHA-256 `password.txt` files can't be
+   verified by bcrypt, so users just re-set the password (personal
+   single-user tool). Also fixed a latent bug in `vault.py`'s EDIT-mode
+   gate, which compared the stored hash to raw input (`s == p`) and so
+   never worked — now calls `check_password()`.
+2. **Password file path** (`panda/auth.py`). Was a relative
+   `password.txt` (written/read from the CWD), so launching PANDA from a
+   different folder lost the password. Now `PASSWORD_PATH =
+   DB_PATH.parent / "password.hash"`, resolved from config so it sits
+   next to the vault in `~/.pandavault/` — one password per device,
+   independent of launch directory. `password()` ensures the directory
+   exists before writing.
+3. **`change` crash on fresh install** (`main.py`). `check_password`
+   raises `FileNotFoundError` when no password is set yet, but the
+   `change` handler didn't catch it — typing "change" before ever
+   setting a password threw an unhandled exception. Now wrapped in
+   `try/except FileNotFoundError`, mirroring the `vault` handler:
+   report it and prompt to set the password.
+4. **`.format()` SQL in Search/Show** (`panda/vault.py`: `SEARCH`,
+   `SHOW`, `PRE_SEARCH`). Honest nuance: local single-user per-device
+   vault, input comes only from the user into their own file, so not a
+   live exploit — a best-practice / interview-optics fix. VALUES are now
+   bound as `?` parameters; IDENTIFIERS (table/column names, which can't
+   be parameterized) are validated with a whitelist (`_safe_identifier`,
+   `^[A-Za-z_][A-Za-z0-9_]*$`) before interpolation. `PRE_SEARCH`'s
+   table is checked for `header_dictionary` membership (also fixes a
+   latent `KeyError` on an unknown table). The "create your own table"
+   feature still works. Out of scope: the `.format()` DDL in
+   `panda_create` (identifiers only, no values) and the bare `except:`
+   blocks.
+5. **DRY / cleanup.** The `vault` handler in `main.py` duplicated the
+   whole 3-attempt login loop (once in `try`, again in `except`);
+   extracted to a single `open_vault()` helper called from both paths.
+   `auth.password()` now writes with a `with` block instead of manual
+   `open('w+')` + `close()`.
+
 ## How to work in this repo
 
 - Read the actual code and verify assumptions against it before proposing.

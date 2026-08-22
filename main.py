@@ -16,6 +16,29 @@ from panda.utilities import (
 )
 from panda.vault import DATABASE
 
+
+def open_vault():
+    """Prompt for the vault password up to 3 times; open it on success.
+
+    Raises FileNotFoundError (from check_password) if no password has
+    been set yet, so the caller can prompt the user to set one.
+    """
+    n = 0
+    while n < 3:
+        p = input("P.A.N.D.A : Enter your password - ")
+        if check_password(p):
+            print("-" * 100)
+            print('PANDA VAULT')
+            print('-' * 100)
+            DATABASE()
+            return
+        print("P.A.N.D.A : Incorrect Password.")
+        print("P.A.N.D.A : Try Again")
+        n += 1
+    print("P.A.N.D.A : ACCESS DENIED")
+    print("P.A.N.D.A : You do not have access to the database system.")
+
+
 run = True
 
 wishme()
@@ -107,51 +130,27 @@ while run:
         typing_speed_test()
 
     elif 'vault' in query:  # SQL CONNECT
-        n = 0
         try:
-            while n < 3:
-                p = input("P.A.N.D.A : Enter your password - ")
-                if check_password(p):
-                    print("-" * 100)
-                    print('PANDA VAULT')
-                    print('-' * 100)
-                    DATABASE()
-                    break
-                else:
-                    print("P.A.N.D.A : Incorrect Password.")
-                    print("P.A.N.D.A : Try Again")
-                    n += 1
-                    if n >= 3:
-                        print("P.A.N.D.A : ACCESS DENIED")
-                        print("P.A.N.D.A : You do not have access to the database system.")
+            open_vault()
         except FileNotFoundError:
             print("P.A.N.D.A : Password hasn't been set yet.")
             print('P.A.N.D.A : Please set the password now.')
             password()
-            while n < 3:
-                p = input("P.A.N.D.A : Enter your password - ")
-                if check_password(p):
-                    print("-" * 100)
-                    print('PANDA VAULT')
-                    print('-' * 100)
-                    DATABASE()
-                    break
-                else:
-                    print("P.A.N.D.A : Incorrect Password.")
-                    print("P.A.N.D.A : Try Again.")
-                    n += 1
-                    if n >= 3:
-                        print("P.A.N.D.A : ACCESS DENIED")
-                        print("P.A.N.D.A : You don't have access to the database system")
+            open_vault()
 
     elif 'change' in query:
-        p = input("P.A.N.D.A : Enter current password - ")
-        if check_password(p):
-            print('P.A.N.D.A : You can change your password now. ')
+        try:
+            p = input("P.A.N.D.A : Enter current password - ")
+            if check_password(p):
+                print('P.A.N.D.A : You can change your password now. ')
+                password()
+                print("P.A.N.D.A : Password updated succesfully.")
+            else:
+                print("P.A.N.D.A : Error, invalid input.")
+        except FileNotFoundError:
+            print("P.A.N.D.A : Password hasn't been set yet.")
+            print('P.A.N.D.A : Please set the password now.')
             password()
-            print("P.A.N.D.A : Password updated succesfully.")
-        else:
-            print("P.A.N.D.A : Error, invalid input.")
 
     else:
         print("P.A.N.D.A : I am sorry, I am unable to find a response for this within my servers, redirecting you to Google...")

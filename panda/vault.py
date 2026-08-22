@@ -14,12 +14,14 @@ server: the vault is a single local file per device (see config.DB_PATH),
 created empty on first run from schema.sql. This makes PandaVault a
 zero-install, offline, per-user tool.
 """
+import re
 import sqlite3
 from pathlib import Path
 
 from tabulate import tabulate
 
 from config import DB_PATH
+from panda.auth import check_password
 
 # schema.sql lives at the repo root (one level up from this panda/ package).
 # Resolve it from __file__ so it is found regardless of the launch directory.
@@ -47,6 +49,23 @@ def init_db(db_path=DB_PATH):
 
 conobj = init_db()
 cur = conobj.cursor()
+
+# SQL parameters (?) can bind VALUES but never IDENTIFIERS (table/column
+# names). For the free-form Search/Show features, validate identifiers
+# against a strict whitelist before interpolating them into SQL.
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _safe_identifier(name):
+    """Return name if it is a valid SQL identifier, else raise ValueError.
+
+    A valid identifier is a letter/underscore followed by any number of
+    letters, digits, or underscores — so quotes, spaces, semicolons and
+    other injection vectors are rejected.
+    """
+    if _IDENTIFIER_RE.match(name):
+        return name
+    raise ValueError("Invalid identifier: {!r}".format(name))
 
 
 def DATABASE():
@@ -517,9 +536,18 @@ def DATABASE():
         inp7=input("Enter Table Name :")
         field1=input("Enter field name")
         val=input("Enter field value")
-        execute19="select* from {} where {}='{}'".format(inp7,field1,val)
         try:
-            cur.execute(execute19)
+            table=_safe_identifier(inp7)
+            field=_safe_identifier(field1)
+        except ValueError:
+            print("P.A.N.D.A : Invalid table or field name.")
+            print("P.A.N.D.A : Use letters, digits and underscores only.")
+            print()
+            return
+        # Identifiers validated above; the value is bound as a parameter.
+        execute19="select * from {} where {} = ?".format(table,field)
+        try:
+            cur.execute(execute19,(val,))
         except:
             print("P.A.N.D.A : An unexpected error has occured")
             print("P.A.N.D.A : Please check the values again")
@@ -530,7 +558,14 @@ def DATABASE():
         print()
     def SHOW():
         inp8=input("Enter table name")
-        execute20="select* from {}".format(inp8)
+        try:
+            table=_safe_identifier(inp8)
+        except ValueError:
+            print("P.A.N.D.A : Invalid table name.")
+            print("P.A.N.D.A : Use letters, digits and underscores only.")
+            print()
+            return
+        execute20="select * from {}".format(table)
         try:
             cur.execute(execute20)
         except:
@@ -545,14 +580,28 @@ def DATABASE():
         inp9=input("Enter table name : ")
         field2=input("Enter field name : ")
         val1=input("Enter field value : ")
-        inp10=header_dictionary[inp9]
+        # The table must be one of the known built-ins (dict membership is
+        # the whitelist); the field is validated; the value is bound.
+        if inp9 not in header_dictionary:
+            print("P.A.N.D.A : Unknown table.")
+            print("P.A.N.D.A : Please check the values again")
+            print()
+            return
         try:
-            execute21="select* from {} where {}='{}'".format(inp9,field2,val1)
+            field=_safe_identifier(field2)
+        except ValueError:
+            print("P.A.N.D.A : Invalid field name.")
+            print("P.A.N.D.A : Use letters, digits and underscores only.")
+            print()
+            return
+        inp10=header_dictionary[inp9]
+        execute21="select * from {} where {} = ?".format(inp9,field)
+        try:
+            cur.execute(execute21,(val1,))
         except:
             print("P.A.N.D.A : An unexpected error has occured")
             print("P.A.N.D.A : Please check the values again")
         else:
-            cur.execute(execute21)
             r27=cur.fetchall()
             print(tabulate(r27,headers=inp10,tablefmt="grid"))
         print()
@@ -585,9 +634,7 @@ def DATABASE():
             n=0
             while n<3:
                 p = input("Enter the password : ")
-                f = open('password.txt', 'r')
-                s = f.read()
-                if s == p :
+                if check_password(p):
                     Choice1=input("Which Table do you want to edit?")
                     if "PANDA CARE" in Choice1.upper():
                         EDIT_EMERGENCY()

@@ -4,3 +4,4 @@ wikipedia
 requests
 tabulate
 python-dotenv
+bcrypt
