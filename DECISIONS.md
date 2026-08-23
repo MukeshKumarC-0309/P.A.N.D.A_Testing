@@ -147,6 +147,14 @@ Separate review pass, after the SQLite migration. One fix at a time.
    extracted to a single `open_vault()` helper called from both paths.
    `auth.password()` now writes with a `with` block instead of manual
    `open('w+')` + `close()`.
+6. **Exception-handling cleanup** (`panda/vault.py`). The 29 bare
+   `except:` blocks (each wrapping a `cur.execute(...)`) now catch
+   `sqlite3.Error` — DB errors are still handled, but real bugs and
+   `KeyboardInterrupt`/`SystemExit` surface instead of being swallowed.
+   `USER()` (the developer REPL over arbitrary SQL) uses `except
+   Exception`, and its "continue?" prompt was moved out of a `finally`
+   block (which had triggered `continue`/`return`-in-`finally`
+   SyntaxWarnings and an unreachable trailing `print()`).
 
 ## How to work in this repo
 

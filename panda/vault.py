@@ -100,7 +100,7 @@ def DATABASE():
             execute="insert into emergency values(?,?,?,?,?,?,?,?)"
             try:   
                 cur.execute(execute,t)
-            except:
+            except sqlite3.Error:
                 print("P.A.N.D.A : There has been an error in adding values")
                 print("P.A.N.D.A :Please check the values again")
             else:
@@ -116,7 +116,7 @@ def DATABASE():
             execute1="delete from Emergency where Patient_ID=?"
             try:
                 cur.execute(execute1,a)
-            except:
+            except sqlite3.Error:
                 print("P.A.N.D.A : An unexpected error has occured")
                 print("P.A.N.D.A : Please check the values again")
             else:
@@ -137,7 +137,7 @@ def DATABASE():
                     execute2="Update Emergency set Name=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -146,7 +146,7 @@ def DATABASE():
                     execute2="Update Emergency set Age=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -155,7 +155,7 @@ def DATABASE():
                     execute2="Update Emergency set Blood_Group=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -164,7 +164,7 @@ def DATABASE():
                     execute2="Update Emergency set Chronic_Disease=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -173,7 +173,7 @@ def DATABASE():
                     execute2="Update Emergency set Doctor_Name=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -182,7 +182,7 @@ def DATABASE():
                     execute2="Update Emergency set Doctor_Phone=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -191,7 +191,7 @@ def DATABASE():
                     execute2="Update Emergency set Allergic_Medications=? where Patient_ID=?"
                     try:    
                         cur.execute(execute2,t1)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -237,7 +237,7 @@ def DATABASE():
             execute="insert into Medicine values(?,?,?,?,?,?,?)"
             try:
                 cur.execute(execute,tup)
-            except:
+            except sqlite3.Error:
                     print("P.A.N.D.A : An unexpected error has occured")
                     print("P.A.N.D.A : Please check the values again")
             else:
@@ -253,7 +253,7 @@ def DATABASE():
             execute2="delete from Medicine where Disease=?"
             try:    
                 cur.execute(execute2,a1)
-            except:
+            except sqlite3.Error:
                     print("P.A.N.D.A : An unexpected error has occured")
                     print("P.A.N.D.A : Please check the values again")
             else:
@@ -274,7 +274,7 @@ def DATABASE():
                     execute3="update Medicine set Medicine_Name=? where Disease=?"
                     try:    
                         cur.execute(execute3,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -283,7 +283,7 @@ def DATABASE():
                     execute3="update Medicine set Manufacturer=? where Disease=?"
                     try:    
                         cur.execute(execute3,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -292,7 +292,7 @@ def DATABASE():
                     execute3="update Medicine set Duration=? where Disease=?"
                     try:    
                         cur.execute(execute3,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -301,7 +301,7 @@ def DATABASE():
                     execute3="update Medicine set Quantity=? where Disease=?"
                     try:    
                         cur.execute(execute3,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -310,7 +310,7 @@ def DATABASE():
                     execute3="update Medicine set Amount=? where Disease=?"
                     try:    
                         cur.execute(execute3,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -319,7 +319,7 @@ def DATABASE():
                     execute3="update Medicine set Remark=? where Disease=?"
                     try:    
                         cur.execute(execute3,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -363,7 +363,7 @@ def DATABASE():
             execute4="insert into Student_Marks values(?,?,?,?,?,?)"
             try:
                 cur.execute(execute4,tup1)
-            except:
+            except sqlite3.Error:
                 print("An unexpected error has occured")
                 print("Please check the values again")
             else:    
@@ -378,7 +378,7 @@ def DATABASE():
             execute5="delete from Student_Marks where Exam_Name=?"
             try:    
                 cur.execute(execute5,a2)
-            except:
+            except sqlite3.Error:
                 print("P.A.N.D.A : An unexpected error has occured")
                 print("P.A.N.D.A : Please check the values again")
             else:    
@@ -399,7 +399,7 @@ def DATABASE():
                     execute6="update Student_Marks set Physics=? where Exam_Name=?"
                     try:    
                         cur.execute(execute6,t3)
-                    except:
+                    except sqlite3.Error:
                         print("An unexpected error has occured")
                         print("Please check the values again") 
                     else:    
@@ -408,7 +408,7 @@ def DATABASE():
                     execute6="update Student_Marks set Chemistry=? where Exam_Name=?"
                     try:    
                         cur.execute(execute6,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -417,7 +417,7 @@ def DATABASE():
                     execute6="update Student_Marks set Mathematics=? where Exam_Name=?"
                     try:    
                         cur.execute(execute6,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -426,7 +426,7 @@ def DATABASE():
                     execute6="update Student_Marks set English=? where Exam_Name=?"
                     try:    
                         cur.execute(execute6,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -435,7 +435,7 @@ def DATABASE():
                     execute6="update Student_Marks set Computer_Science=? where Exam_Name=?"
                     try:    
                         cur.execute(execute6,t3)
-                    except:
+                    except sqlite3.Error:
                         print("P.A.N.D.A : An unexpected error has occured")
                         print("P.A.N.D.A : Please check the values again") 
                     else:    
@@ -477,19 +477,17 @@ def DATABASE():
         while True:
             try:
                 inp=input("What do you want to do ? ")
-                cur.execute(inp) 
+                cur.execute(inp)
                 conobj.commit()
-            except:
+            except Exception:
                 print("P.A.N.D.A : An unexpected error has occurred.")
                 print("P.A.N.D.A : Please try again.")
-            finally:
-                inp5=input("Do you want to continue using DEVELOPER MODE ? ")
-                if inp5.upper()=="YES":
-                    continue
-                else:
-                    print("Exiting DEVELOPER MODE...")
-                    return
-        print()
+            inp5=input("Do you want to continue using DEVELOPER MODE ? ")
+            if inp5.upper()=="YES":
+                continue
+            else:
+                print("Exiting DEVELOPER MODE...")
+                return
     def panda_create():
         ch=input("Enter table name : ")
         execute15="create table if not exists {}(Serial_No TEXT)".format(ch)
@@ -502,7 +500,7 @@ def DATABASE():
                 execute16="alter table {} add column {} TEXT".format(ch,inp1)
                 try:
                     cur.execute(execute16)
-                except:
+                except sqlite3.Error:
                     print("P.A.N.D.A : An unexpected error has occured")
                     print("P.A.N.D.A : Please check the values again")
                 else:
@@ -524,7 +522,7 @@ def DATABASE():
                 execute17="insert or ignore into {} values{}".format(ch,a)
                 try:
                     cur.execute(execute17)
-                except:
+                except sqlite3.Error:
                     print("P.A.N.D.A : An unexpected error has occured")
                     print("P.A.N.D.A : Please check the values again")
                 else:
@@ -548,7 +546,7 @@ def DATABASE():
         execute19="select * from {} where {} = ?".format(table,field)
         try:
             cur.execute(execute19,(val,))
-        except:
+        except sqlite3.Error:
             print("P.A.N.D.A : An unexpected error has occured")
             print("P.A.N.D.A : Please check the values again")
         else:
@@ -568,7 +566,7 @@ def DATABASE():
         execute20="select * from {}".format(table)
         try:
             cur.execute(execute20)
-        except:
+        except sqlite3.Error:
             print("P.A.N.D.A : An unexpected error has occured")
             print("P.A.N.D.A : Please check the values again")
         else:
@@ -598,7 +596,7 @@ def DATABASE():
         execute21="select * from {} where {} = ?".format(inp9,field)
         try:
             cur.execute(execute21,(val1,))
-        except:
+        except sqlite3.Error:
             print("P.A.N.D.A : An unexpected error has occured")
             print("P.A.N.D.A : Please check the values again")
         else:
