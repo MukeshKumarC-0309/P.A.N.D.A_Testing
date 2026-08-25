@@ -16,39 +16,11 @@ zero-install, offline, per-user tool.
 """
 import re
 import sqlite3
-from pathlib import Path
 
 from tabulate import tabulate
 
-from config import DB_PATH
+from panda.db import connection as conobj, cursor as cur
 from panda.auth import check_password
-
-# schema.sql lives at the repo root (one level up from this panda/ package).
-# Resolve it from __file__ so it is found regardless of the launch directory.
-SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schema.sql"
-
-
-def init_db(db_path=DB_PATH):
-    """
-    Open (and on first run, create) the local SQLite vault.
-
-    Ensures the parent directory exists, connects to the vault file
-    (sqlite3 creates it if missing), then runs schema.sql so the built-in
-    tables exist as empty tables. CREATE TABLE IF NOT EXISTS makes this
-    idempotent and non-destructive: existing user data is never touched.
-    Returns the open connection.
-    """
-    db_path = Path(db_path)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    with open(SCHEMA_PATH, "r") as f:
-        conn.executescript(f.read())
-    conn.commit()
-    return conn
-
-
-conobj = init_db()
-cur = conobj.cursor()
 
 # SQL parameters (?) can bind VALUES but never IDENTIFIERS (table/column
 # names). For the free-form Search/Show features, validate identifiers

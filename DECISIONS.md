@@ -200,9 +200,11 @@ honestly" principle is the shared product voice.
 Enables the merge (TDR registers commands without editing vault's loop)
 and retires the `main.py` if/elif god-loop. Small, reviewable steps:
 
-1. **Extract `db` module** — move `init_db()` + the connection out of
-   `vault.py`; both `vault` and (future) `tdr` import it. No behavior
-   change; pure structure.
+1. **Extract `db` module** — DONE: `panda/db.py` now owns `SCHEMA_PATH`,
+   `init_db()`, and the shared `connection`/`cursor`; `vault.py` imports
+   them (aliased to its existing `conobj`/`cur`, so no function bodies
+   changed). Both `vault` and (future) `tdr` import the same connection.
+   Verified behavior-neutral: test suite green before and after.
 2. **Command registry** — a list of intents (keywords/patterns +
    handler); a dispatcher that picks the *best* match, not the first
    substring hit (fixes collisions like `time`/`set`/`type`). Register
