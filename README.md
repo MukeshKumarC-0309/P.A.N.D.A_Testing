@@ -96,7 +96,7 @@ panda-assistant/
 ├── .env.example         # template for required environment variables
 ├── .gitignore
 ├── requirements.txt
-├── DECISIONS.md            # decision record (MySQL→SQLite, table curation)
+├── DECISIONS.md         # decision record (MySQL→SQLite, table curation)
 └── panda/
     ├── system.py         # help text, greeting, date/time/battery
     ├── auth.py           # password hashing and vault authentication

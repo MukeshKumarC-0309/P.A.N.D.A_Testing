@@ -1,4 +1,4 @@
-# DECISIONS.md — PandaVault
+# Decisions — PandaVault
 
 Guidance and decision record for working in this repo.
 
@@ -155,6 +155,65 @@ Separate review pass, after the SQLite migration. One fix at a time.
    Exception`, and its "continue?" prompt was moved out of a `finally`
    block (which had triggered `continue`/`return`-in-`finally`
    SyntaxWarnings and an unreachable trailing `print()`).
+
+## Future: the PANDA TDR merge (architectural guardrails)
+
+PandaVault has a sibling project, **PANDA TDR** (Threat Detection &
+Response): a Python security pipeline that pulls Cowrie SSH-honeypot and
+Windows Security-log telemetry (Events 4625/4624/4720) from Splunk, does
+cross-source correlation (shared source IP, username fallback) plus
+standalone detections (brute-force / password-spray, account creation,
+and a failed→successful-logon→account-creation kill chain), scores
+severity with an interpretable model, and writes graded-confidence
+incident reports in two audiences (technical + plain-language). The two
+are separate repos now; the plan is to merge them into one **PANDA**
+product where PandaVault (the personal CLI vault/DBMS) and TDR (the
+detection engine) are two capabilities of the same app. Nothing needs to
+change now — but do not entrench choices that make the merge painful:
+
+1. **Config: no import-time hard `raise` for all keys.** `config.py`
+   currently raises at import if the weather/news keys are missing. When
+   TDR imports `config` (for Splunk host/token/index), that would force
+   it to satisfy vault's keys too. Move to per-feature, lazy validation
+   so each capability declares only its own config and the merged
+   `config.py` stays additive.
+2. **Extract a shared `db` module.** The sqlite3 connection lives as
+   module-level `conobj`/`cur` globals inside `vault.py`, reachable only
+   through `DATABASE()`. TDR will want to persist alerts/incidents in the
+   same vault file via the same `init_db()`/`schema.sql` path. When the
+   README's class refactor happens, split connection + `init_db` into a
+   `db` module both `vault` and `tdr` import.
+3. **Keep the store generic.** `schema.sql` + `init_db()` are a generic
+   "create tables if missing" mechanism — keep them that way. TDR's
+   `tdr_incidents`/alert tables belong in the same vault file; avoid
+   "these are *the* (personal) tables" assumptions in schema, help text,
+   or routing.
+
+Synergies to design toward (not build now): the vault becomes TDR's
+alert/incident store (one encrypted SQLite file for personal records +
+security findings); TDR sits behind the same `auth` password gate; and
+TDR's "state only what the data supports, grade confidence, caveat
+honestly" principle is the shared product voice.
+
+## Planned refactor: CLI command registry + db extraction
+
+Enables the merge (TDR registers commands without editing vault's loop)
+and retires the `main.py` if/elif god-loop. Small, reviewable steps:
+
+1. **Extract `db` module** — move `init_db()` + the connection out of
+   `vault.py`; both `vault` and (future) `tdr` import it. No behavior
+   change; pure structure.
+2. **Command registry** — a list of intents (keywords/patterns +
+   handler); a dispatcher that picks the *best* match, not the first
+   substring hit (fixes collisions like `time`/`set`/`type`). Register
+   vault's built-ins into it.
+3. **Namespacing + fallback hook** — `vault` / `tdr` command groups; the
+   `else` branch becomes a registered "last resort" handler (Google
+   today; TDR or an LLM later).
+4. **Lazy per-feature config validation** — removes the import-time
+   `raise` (guardrail #1 above).
+5. **Tests** around the dispatcher + `db` before TDR starts adding to
+   them (regression safety across the merge).
 
 ## How to work in this repo
 
