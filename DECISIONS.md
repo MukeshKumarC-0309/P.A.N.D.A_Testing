@@ -205,10 +205,14 @@ and retires the `main.py` if/elif god-loop. Small, reviewable steps:
    them (aliased to its existing `conobj`/`cur`, so no function bodies
    changed). Both `vault` and (future) `tdr` import the same connection.
    Verified behavior-neutral: test suite green before and after.
-2. **Command registry** — a list of intents (keywords/patterns +
-   handler); a dispatcher that picks the *best* match, not the first
-   substring hit (fixes collisions like `time`/`set`/`type`). Register
-   vault's built-ins into it.
+2. **Command registry** — DONE: `panda/router.py` holds
+   `register`/`select`/`dispatch` with whole-word (`\bkw\b`) matching and
+   best-score selection (fixes `set`/sunset, `time`/bedtime collisions).
+   `main.py` registers its built-ins and the loop is now
+   `dispatch(takecommand(), fallback)`; startup moved behind
+   `if __name__ == "__main__"` so it's importable/testable. TDR can
+   `router.register(...)` without editing the loop. Covered by
+   tests/test_router.py.
 3. **Namespacing + fallback hook** — `vault` / `tdr` command groups; the
    `else` branch becomes a registered "last resort" handler (Google
    today; TDR or an LLM later).

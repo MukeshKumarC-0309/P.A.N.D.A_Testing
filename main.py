@@ -1,6 +1,10 @@
 """
 P.A.N.D.A - Personalized Automated Next-gen Digital Assistant
-Entry point: command loop and routing.
+Entry point: greeting, command loop, and command registration.
+
+Routing is handled by panda/router.py: each command registers keywords
+and a handler(query); the loop just dispatches. This replaces the
+original if/elif chain and makes it easy to add new capabilities.
 
 Originally developed by Pranav, Mukesh, Vaishanth, and Gautam as a
 12th-grade school project. This version removes the games/arcade
@@ -15,6 +19,66 @@ from panda.utilities import (
     stopwatch, countdown, typing_speed_test, open_google_search
 )
 from panda.vault import DATABASE
+from panda import router
+
+
+# ---------------------------------------------------------------------------
+# Command handlers. Each takes the raw query string (some ignore it).
+# ---------------------------------------------------------------------------
+
+def handle_wikipedia(query):
+    print('P.A.N.D.A : Searching Wikipedia...')
+    topic = query.lower().replace("wikipedia", "").replace("wiki", "").strip()
+    try:
+        results = wikipedia.summary(topic, sentences=2)
+        print("P.A.N.D.A : According to Wikipedia : ")
+        print(results)
+    except wikipedia.exceptions.DisambiguationError:
+        print(f"P.A.N.D.A : There are multiple meanings for '{topic}'. Please be more specific.")
+    except wikipedia.exceptions.PageError:
+        print(f"P.A.N.D.A : '{topic}' does not match any Wikipedia page. Please try again.")
+
+
+def handle_youtube(query):
+    import webbrowser as wb
+    wb.open("https://www.youtube.com/")
+
+
+def handle_google(query):
+    import webbrowser as wb
+    wb.open("https://www.google.com/")
+
+
+def handle_weather(query):
+    print("P.A.N.D.A : What is the city name ? ")
+    city_name = takecommand()
+    weather(city_name)
+
+
+def handle_calculator(query):
+    print("Please select operation -\n"
+          "1. Add\n"
+          "2. Subtract\n"
+          "3. Multiply\n"
+          "4. Divide\n")
+    inp = input('P.A.N.D.A : Enter the Operator - ')
+    number_1 = float(input("P.A.N.D.A : Enter first number: "))
+    number_2 = float(input("P.A.N.D.A : Enter second number: "))
+    if inp.lower() == 'add' or inp.lower() == '+':
+        print(number_1, "+", number_2, "=", add(number_1, number_2))
+    elif inp.lower() == 'subtract' or inp.lower() == '-':
+        print(number_1, "-", number_2, "=", subtract(number_1, number_2))
+    elif inp.lower() == 'multiply' or inp.lower() == '*':
+        print(number_1, "*", number_2, "=", multiply(number_1, number_2))
+    elif inp.lower() == 'divide' or inp.lower() == '/':
+        print(number_1, "/", number_2, "=", divide(number_1, number_2))
+    else:
+        print('P.A.N.D.A : Invalid Input.')
+
+
+def handle_countdown(query):
+    sec = int(input("P.A.N.D.A : How many seconds ? "))
+    countdown(sec)
 
 
 def open_vault():
@@ -39,119 +103,68 @@ def open_vault():
     print("P.A.N.D.A : You do not have access to the database system.")
 
 
-run = True
+def handle_vault(query):
+    try:
+        open_vault()
+    except FileNotFoundError:
+        print("P.A.N.D.A : Password hasn't been set yet.")
+        print('P.A.N.D.A : Please set the password now.')
+        password()
+        open_vault()
 
-wishme()
-while run:
-    query_initial = takecommand()
-    query = query_initial.lower()
 
-    if 'quit' in query:
-        run = False
-        break
-
-    elif 'time' in query:
-        ti()
-
-    elif 'date' in query:
-        date()
-
-    elif 'battery' in query:
-        battery()
-
-    elif 'jokes' in query or 'joke' in query:
-        joke()
-
-    elif 'wikipedia' in query or 'wiki' in query:
-        print('P.A.N.D.A : Searching Wikipedia...')
-        query = query.replace("wikipedia", "")
-        try:
-            results = wikipedia.summary(query, sentences=2)
-            print("P.A.N.D.A : According to Wikipedia : ")
-            print(results)
-        except wikipedia.exceptions.DisambiguationError:
-            print(f"P.A.N.D.A : There are multiple meanings for '{query}'. Please be more specific.")
-        except wikipedia.exceptions.PageError:
-            print(f"P.A.N.D.A : '{query}' does not match any Wikipedia page. Please try again.")
-
-    elif 'remember' in query or 'rmr' in query:
-        remember()
-
-    elif 'youtube' in query:
-        import webbrowser as wb
-        wb.open("https://www.youtube.com/")
-
-    elif 'google' in query:
-        import webbrowser as wb
-        wb.open("https://www.google.com/")
-
-    elif "weather" in query:
-        print("P.A.N.D.A : What is the city name ? ")
-        city_name = takecommand()
-        weather(city_name)
-
-    elif 'news' in query:
-        News()
-
-    elif 'help' in query:
-        help()
-
-    elif 'calculate' in query or 'calculator' in query:
-        print("Please select operation -\n"
-              "1. Add\n"
-              "2. Subtract\n"
-              "3. Multiply\n"
-              "4. Divide\n")
-        inp = input('P.A.N.D.A : Enter the Operator - ')
-        number_1 = float(input("P.A.N.D.A : Enter first number: "))
-        number_2 = float(input("P.A.N.D.A : Enter second number: "))
-        if inp.lower() == 'add' or inp.lower() == '+':
-            print(number_1, "+", number_2, "=", add(number_1, number_2))
-        elif inp.lower() == 'subtract' or inp.lower() == '-':
-            print(number_1, "-", number_2, "=", subtract(number_1, number_2))
-        elif inp.lower() == 'multiply' or inp.lower() == '*':
-            print(number_1, "*", number_2, "=", multiply(number_1, number_2))
-        elif inp.lower() == 'divide' or inp.lower() == '/':
-            print(number_1, "/", number_2, "=", divide(number_1, number_2))
+def handle_change(query):
+    try:
+        p = input("P.A.N.D.A : Enter current password - ")
+        if check_password(p):
+            print('P.A.N.D.A : You can change your password now. ')
+            password()
+            print("P.A.N.D.A : Password updated succesfully.")
         else:
-            print('P.A.N.D.A : Invalid Input.')
-
-    elif 'set' in query:
+            print("P.A.N.D.A : Error, invalid input.")
+    except FileNotFoundError:
+        print("P.A.N.D.A : Password hasn't been set yet.")
+        print('P.A.N.D.A : Please set the password now.')
         password()
 
-    elif 'stopwatch' in query or 'watch' in query:
-        stopwatch()
 
-    elif 'countdown' in query:
-        sec = int(input("P.A.N.D.A : How many seconds ? "))
-        countdown(sec)
+def fallback(query):
+    print("P.A.N.D.A : I am sorry, I am unable to find a response for this within my servers, redirecting you to Google...")
+    open_google_search(query)
 
-    elif 'speed' in query or 'type' in query:
-        typing_speed_test()
 
-    elif 'vault' in query:  # SQL CONNECT
-        try:
-            open_vault()
-        except FileNotFoundError:
-            print("P.A.N.D.A : Password hasn't been set yet.")
-            print('P.A.N.D.A : Please set the password now.')
-            password()
-            open_vault()
+# ---------------------------------------------------------------------------
+# Register the built-in commands. Trivial delegations use a small lambda.
+# ---------------------------------------------------------------------------
 
-    elif 'change' in query:
-        try:
-            p = input("P.A.N.D.A : Enter current password - ")
-            if check_password(p):
-                print('P.A.N.D.A : You can change your password now. ')
-                password()
-                print("P.A.N.D.A : Password updated succesfully.")
-            else:
-                print("P.A.N.D.A : Error, invalid input.")
-        except FileNotFoundError:
-            print("P.A.N.D.A : Password hasn't been set yet.")
-            print('P.A.N.D.A : Please set the password now.')
-            password()
+router.register("time", ["time"], lambda q: ti())
+router.register("date", ["date"], lambda q: date())
+router.register("battery", ["battery"], lambda q: battery())
+router.register("joke", ["joke", "jokes"], lambda q: joke())
+router.register("wikipedia", ["wikipedia", "wiki"], handle_wikipedia)
+router.register("remember", ["remember", "rmr"], lambda q: remember())
+router.register("youtube", ["youtube"], handle_youtube)
+router.register("google", ["google"], handle_google)
+router.register("weather", ["weather"], handle_weather)
+router.register("news", ["news"], lambda q: News())
+router.register("help", ["help"], lambda q: help())
+router.register("calculator", ["calculate", "calculator"], handle_calculator)
+router.register("set", ["set"], lambda q: password())
+router.register("stopwatch", ["stopwatch", "watch"], lambda q: stopwatch())
+router.register("countdown", ["countdown"], handle_countdown)
+router.register("typing", ["speed", "type"], lambda q: typing_speed_test())
+router.register("vault", ["vault"], handle_vault)
+router.register("change", ["change"], handle_change)
 
-    else:
-        print("P.A.N.D.A : I am sorry, I am unable to find a response for this within my servers, redirecting you to Google...")
-        open_google_search(query)
+
+def main():
+    wishme()
+    while True:
+        query = takecommand()
+        if router.matches("quit", query):
+            break
+        router.dispatch(query, fallback)
+
+
+if __name__ == "__main__":
+    main()
