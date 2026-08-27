@@ -1,39 +1,33 @@
 """
-Shared SQLite connection + first-run bootstrap for PandaVault.
+Shared SQLite connection for PandaVault, encrypted at rest.
 
-This module owns the database so that any capability can share one open
-connection to the single per-device vault file (see config.DB_PATH),
-rather than each opening its own. Today the personal-records vault
-(panda/vault.py) uses it; a future TDR (threat detection) component can
-import the same connection to persist its alerts/incidents in the same
-file.
+The live database is held IN MEMORY; on disk there is only an encrypted
+blob (config.DB_PATH). unlock(password) decrypts that blob into memory;
+lock(password) serializes memory back out, encrypted. So plaintext vault
+data never touches the disk.
 
-The vault file is created on first run from schema.sql at the repo root.
+This module owns the one connection so any capability can share it — the
+personal-records vault (panda/vault.py) today, a future TDR (threat
+detection) component tomorrow, persisting into the same encrypted vault.
 """
 import re
 import sqlite3
 from pathlib import Path
 
 from config import DB_PATH
+from panda import crypto
 
 # schema.sql lives at the repo root (one level up from this panda/ package).
 # Resolve it from __file__ so it is found regardless of the launch directory.
 SCHEMA_PATH = Path(__file__).resolve().parent.parent / "schema.sql"
 
 
-def init_db(db_path=DB_PATH):
-    """
-    Open (and on first run, create) the local SQLite vault.
+def init_db():
+    """Create a fresh in-memory database with the built-in schema applied.
 
-    Ensures the parent directory exists, connects to the vault file
-    (sqlite3 creates it if missing), then runs schema.sql so the built-in
-    tables exist as empty tables. CREATE TABLE IF NOT EXISTS makes this
-    idempotent and non-destructive: existing user data is never touched.
-    Returns the open connection.
+    This is the empty/locked state. Real data is loaded by unlock().
     """
-    db_path = Path(db_path)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(":memory:")
     conn.execute("PRAGMA foreign_keys = ON")  # enforce FKs (future TDR tables)
     with open(SCHEMA_PATH, "r") as f:
         conn.executescript(f.read())
@@ -41,9 +35,40 @@ def init_db(db_path=DB_PATH):
     return conn
 
 
-# The one shared connection/cursor for the process.
+# The one shared in-memory connection/cursor for the process.
 connection = init_db()
 cursor = connection.cursor()
+
+
+def unlock(password, path=DB_PATH):
+    """Decrypt the vault file into the in-memory database.
+
+    On first run (no file yet) this is a no-op: memory keeps the empty
+    schema from init_db(). Raises crypto.BadPassword on a wrong password
+    or a tampered file.
+    """
+    path = Path(path)
+    if not path.exists():
+        return
+    blob = path.read_bytes()
+    salt, token = blob[:crypto.SALT_LENGTH], blob[crypto.SALT_LENGTH:]
+    data = crypto.decrypt(token, password, salt)
+    connection.deserialize(data)
+
+
+def lock(password, path=DB_PATH):
+    """Serialize the in-memory database and write it out encrypted.
+
+    A fresh salt is used each time and stored as the first bytes of the
+    file, ahead of the ciphertext.
+    """
+    connection.commit()
+    data = connection.serialize()
+    salt = crypto.new_salt()
+    token = crypto.encrypt(data, password, salt)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(salt + token)
 
 
 # ---------------------------------------------------------------------------

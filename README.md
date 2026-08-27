@@ -117,6 +117,11 @@ No database server or installation is required: on first run the app
 creates a local SQLite vault at `~/.pandavault/vault.db` with the
 built-in tables empty, ready for your own data.
 
+The vault is **encrypted at rest**: on disk it is only ciphertext,
+encrypted with a key derived (scrypt) from your vault password. Opening
+the vault decrypts it into memory; leaving it re-encrypts to disk — the
+plaintext records never touch the disk.
+
 ## Known scope for further work
 
 `panda/vault.py` is currently one large function (`DATABASE()`) with

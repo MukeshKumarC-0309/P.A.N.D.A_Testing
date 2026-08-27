@@ -246,9 +246,18 @@ hits disk: unlock decrypts the file into an in-memory SQLite DB (via
   `decrypt` (Fernet), `new_salt`; wired into nothing yet. Tested in
   isolation (round-trip, wrong-password rejected, tamper detected).
   `cryptography` added to requirements.txt.
-- **A1 (next):** wire the unlock/lock lifecycle into the db layer and the
-  vault entry/exit flow. Invasive — changes the connection from
-  open-file-at-import to unlock-with-password-into-memory.
+- **A1 (done):** the live DB is now in-memory; on disk there is only an
+  encrypted blob at `config.DB_PATH` (random salt prepended to the
+  ciphertext). `db.unlock(password)` decrypts+`deserialize`s into memory;
+  `db.lock(password)` `serialize`s+encrypts back out. `main.py` unlocks on
+  vault entry and locks in a `finally` on exit (so a normal exit or an
+  error still re-encrypts; only a hard kill mid-session loses that
+  session). The key derives from the login password, so `change` password
+  unlocks-old then locks-new (`auth.password()` now returns the raw
+  password for this). Verified: unit tests + a two-process run (persist
+  across runs, no plaintext on disk, wrong password rejected, password
+  change re-encrypts). Could extend to envelope encryption (wrap a random
+  data key) so a password change re-wraps the key instead of re-encrypting.
 
 ## How to work in this repo
 

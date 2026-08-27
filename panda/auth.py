@@ -24,6 +24,7 @@ def password():
         f.write(hashed.decode())  # bcrypt hashes are ASCII; store as text
     print("P.A.N.D.A : Password created.", end=' ')
     print("Make sure you remember it. ")
+    return passw  # raw password, so callers can also derive the vault key
 
 
 def check_password(typed_password):

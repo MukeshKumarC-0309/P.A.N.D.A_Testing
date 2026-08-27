@@ -19,7 +19,7 @@ from panda.utilities import (
     stopwatch, countdown, typing_speed_test, open_google_search
 )
 from panda.vault import DATABASE
-from panda import router
+from panda import router, db
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +94,11 @@ def open_vault():
             print("-" * 100)
             print('PANDA VAULT')
             print('-' * 100)
-            DATABASE()
+            db.unlock(p)          # decrypt the vault into memory
+            try:
+                DATABASE()
+            finally:
+                db.lock(p)        # re-encrypt on exit, even if DATABASE() errors
             return
         print("P.A.N.D.A : Incorrect Password.")
         print("P.A.N.D.A : Try Again")
@@ -118,7 +122,9 @@ def handle_change(query):
         p = input("P.A.N.D.A : Enter current password - ")
         if check_password(p):
             print('P.A.N.D.A : You can change your password now. ')
-            password()
+            db.unlock(p)                 # load the vault with the current key
+            new_password = password()    # sets the new hash, returns the raw pw
+            db.lock(new_password)        # re-encrypt the vault under the new key
             print("P.A.N.D.A : Password updated succesfully.")
         else:
             print("P.A.N.D.A : Error, invalid input.")
