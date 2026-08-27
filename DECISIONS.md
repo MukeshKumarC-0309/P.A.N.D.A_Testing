@@ -229,6 +229,27 @@ and retires the `main.py` if/elif god-loop. Small, reviewable steps:
 5. **Tests** around the dispatcher + `db` before TDR starts adding to
    them (regression safety across the merge).
 
+## Vault encryption at rest (in progress)
+
+Making the "vault" a real feature: the vault file is encrypted on disk so
+the records are unreadable without the password.
+
+**Approach chosen: app-level `cryptography`, not SQLCipher.** `cryptography`
+ships abi3 wheels (installs on any modern Python incl. 3.14; SQLCipher's
+native wheels are unreliable there), keeps the zero-install/offline story,
+and lets the design show real primitives — a scrypt-derived key, Fernet
+(AES-CBC+HMAC) authenticated encryption, a random salt. Plaintext never
+hits disk: unlock decrypts the file into an in-memory SQLite DB (via
+`Connection.serialize`/`deserialize`, Python 3.11+), lock re-encrypts.
+
+- **A0 (done):** `panda/crypto.py` — `derive_key` (scrypt), `encrypt`/
+  `decrypt` (Fernet), `new_salt`; wired into nothing yet. Tested in
+  isolation (round-trip, wrong-password rejected, tamper detected).
+  `cryptography` added to requirements.txt.
+- **A1 (next):** wire the unlock/lock lifecycle into the db layer and the
+  vault entry/exit flow. Invasive — changes the connection from
+  open-file-at-import to unlock-with-password-into-memory.
+
 ## How to work in this repo
 
 - Read the actual code and verify assumptions against it before proposing.
