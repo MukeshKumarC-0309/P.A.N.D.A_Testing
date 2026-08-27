@@ -205,6 +205,14 @@ and retires the `main.py` if/elif god-loop. Small, reviewable steps:
    them (aliased to its existing `conobj`/`cur`, so no function bodies
    changed). Both `vault` and (future) `tdr` import the same connection.
    Verified behavior-neutral: test suite green before and after.
+   `db.py` also now exposes a shared data-access layer
+   (`fetch_all`/`fetch_where`/`insert`/`update`/`delete`) that binds
+   values as `?` and validates identifiers via `safe_identifier`, plus
+   `PRAGMA foreign_keys = ON`. Emergency's functions were migrated onto
+   it as the pattern (EDIT collapsed a 7-branch if/elif to a column map +
+   one `update`; also fixed a latent infinite loop on an unknown field).
+   This DAO is the safe query surface TDR will use to persist alerts in
+   the same vault.
 2. **Command registry** — DONE: `panda/router.py` holds
    `register`/`select`/`dispatch` with whole-word (`\bkw\b`) matching and
    best-score selection (fixes `set`/sunset, `time`/bedtime collisions).

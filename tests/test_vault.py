@@ -61,3 +61,27 @@ def test_safe_identifier_accepts_and_rejects():
     for bad in ("a b", "x'; drop table Emergency", "1abc", "col;--"):
         with pytest.raises(ValueError):
             vault._safe_identifier(bad)
+
+
+def test_edit_emergency_add_end_to_end(db, clean_password, monkeypatch):
+    """Drive the real DATABASE() loop through EDIT -> ADD -> QUIT.
+
+    Covers the DAO-migrated EDIT_EMERGENCY (nested, so not callable
+    directly), the EDIT password gate, and the access-loop routing.
+    """
+    from panda import auth
+    monkeypatch.setattr("builtins.input", lambda *a, **k: "pw")
+    auth.password()  # set the vault password to "pw"
+
+    steps = iter([
+        "EDIT", "pw", "PANDA CARE",              # unlock + pick table
+        "ADD", "P9", "Zed", "40", "AB+",         # add: id, name, age, blood
+        "none", "Dr X", "12345", "{none}",       # disease, doctor, phone, allergies
+        "QUIT",                                   # leave the vault
+    ])
+    monkeypatch.setattr("builtins.input", lambda *a, **k: next(steps))
+    vault.DATABASE()
+
+    row = vault.cur.execute(
+        "select Name, Age from Emergency where Patient_ID=?", ("P9",)).fetchone()
+    assert row == ("Zed", 40)   # Age coerced to INTEGER by the schema affinity

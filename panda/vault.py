@@ -14,170 +14,74 @@ server: the vault is a single local file per device (see config.DB_PATH),
 created empty on first run from schema.sql. This makes PandaVault a
 zero-install, offline, per-user tool.
 """
-import re
 import sqlite3
 
 from tabulate import tabulate
 
 from panda.db import connection as conobj, cursor as cur
+from panda.db import safe_identifier as _safe_identifier
+from panda.db import fetch_all, insert, update, delete
 from panda.auth import check_password
-
-# SQL parameters (?) can bind VALUES but never IDENTIFIERS (table/column
-# names). For the free-form Search/Show features, validate identifiers
-# against a strict whitelist before interpolating them into SQL.
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-
-
-def _safe_identifier(name):
-    """Return name if it is a valid SQL identifier, else raise ValueError.
-
-    A valid identifier is a letter/underscore followed by any number of
-    letters, digits, or underscores — so quotes, spaces, semicolons and
-    other injection vectors are rejected.
-    """
-    if _IDENTIFIER_RE.match(name):
-        return name
-    raise ValueError("Invalid identifier: {!r}".format(name))
 
 
 def DATABASE():
+    EMERGENCY_HEADER=["Patient_ID","Name","Age","Blood_Group","Chronic_Disease","Doctor_Name","Doctor_Phone","Allergic_Medications"]
     def Emergency():
-        cur.execute("select* from Emergency order by Patient_ID")
-        r=cur.fetchall()
-        header=["Patient_ID","Name","Age","Blood_Group","Chronic_Disease","Doctor_Name","Doctor_Phone","Allergic_Medications"]
-        conobj.commit()
-        print(tabulate(r,headers=header,tablefmt="grid"))
+        print(tabulate(fetch_all("Emergency", order_by="Patient_ID"),
+                       headers=EMERGENCY_HEADER, tablefmt="grid"))
     def EDIT_EMERGENCY():
         Choice=input("What do you want to do ? ( Add | Edit | Delete ) : ")
-        if Choice.upper()=="ADD":        
-            l=[]
-            Patient_ID=input("Enter Patient ID : ")
-            l.append(Patient_ID)
-            Name=input("Enter Patient Name : ")
-            l.append(Name)
-            Age=int(input("Enter Patient Age : "))
-            l.append(Age)
-            Blood_Group=input("Enter Blood Group : ")
-            l.append(Blood_Group)
-            Chronic_Disease=input("What disease is he/she suffering from? : ")
-            l.append(Chronic_Disease)
-            Doctor_Name=input("Enter the name of the doctor : ")
-            l.append(Doctor_Name)
-            Doctor_Phone=input("Enter doctor's phone number : ")
-            l.append(Doctor_Phone)
-            Allergic_Medications=input("What medicines is he/she allergic to ? ( please specify within curly brackets {} ) : ")
-            l.append(Allergic_Medications)
-            t=tuple(l)
-            header=["Patient_ID","Name","Age","Blood_Group","Chronic_Disease","Doctor_Name","Doctor_Phone","Allergic_Medications"]
-            execute="insert into emergency values(?,?,?,?,?,?,?,?)"
-            try:   
-                cur.execute(execute,t)
+        if Choice.upper()=="ADD":
+            prompts=[
+                "Enter Patient ID : ",
+                "Enter Patient Name : ",
+                "Enter Patient Age : ",
+                "Enter Blood Group : ",
+                "What disease is he/she suffering from? : ",
+                "Enter the name of the doctor : ",
+                "Enter doctor's phone number : ",
+                "What medicines is he/she allergic to ? ( please specify within curly brackets {} ) : ",
+            ]
+            values=[input(p) for p in prompts]
+            values[2]=int(values[2])  # Age is stored as an integer
+            try:
+                added=insert("emergency", values)
             except sqlite3.Error:
                 print("P.A.N.D.A : There has been an error in adding values")
                 print("P.A.N.D.A :Please check the values again")
             else:
-                conobj.commit()
-                print("No.of records added:",cur.rowcount)
-                cur.execute("select* from Emergency order by Patient_ID")
-                r3=cur.fetchall()
-                print(tabulate(r3,headers=header,tablefmt="grid"))
+                print("No.of records added:", added)
+                Emergency()
         elif Choice.upper()=="DELETE":
-            a=()
             ID=input("Enter the ID of the patient whose record you want to remove : ")
-            a+=(ID,)
-            execute1="delete from Emergency where Patient_ID=?"
             try:
-                cur.execute(execute1,a)
+                delete("Emergency", "Patient_ID", ID)
             except sqlite3.Error:
                 print("P.A.N.D.A : An unexpected error has occured")
                 print("P.A.N.D.A : Please check the values again")
             else:
-                conobj.commit()
-                header=["Patient_ID","Name","Age","Blood_Group","Chronic_Disease","Doctor_Name","Doctor_Phone","Allergic_Medications"]
-                cur.execute("select* from Emergency order by Patient_ID")
-                r4=cur.fetchall()
-                print(tabulate(r4,headers=header,tablefmt="grid"))
+                Emergency()
         elif Choice.upper()=="EDIT":
-            t1=()
+            columns={
+                "NAME":"Name", "AGE":"Age", "BLOOD GROUP":"Blood_Group",
+                "CHRONIC DISEASE":"Chronic_Disease", "DOCTOR NAME":"Doctor_Name",
+                "DOCTOR PHONE":"Doctor_Phone", "ALLERGIC MEDICATIONS":"Allergic_Medications",
+            }
             field=input("which field do you want to change? : ")
             patient_ID=input("Enter ID of patient whose value is to be changed : ")
             new=input("Enter new value ( If Allergic Medications are specified,please put them in curly brackets ) : ")
-            t1+=(new,patient_ID,)
-            count1=0
-            while True:
-                if field.upper()=="NAME":
-                    execute2="Update Emergency set Name=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif field.upper()=="AGE":
-                    execute2="Update Emergency set Age=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif field.upper()=="BLOOD GROUP":
-                    execute2="Update Emergency set Blood_Group=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif field.upper()=="CHRONIC DISEASE":
-                    execute2="Update Emergency set Chronic_Disease=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif field.upper()=="DOCTOR NAME":
-                    execute2="Update Emergency set Doctor_Name=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif field.upper()=="DOCTOR PHONE":
-                    execute2="Update Emergency set Doctor_Phone=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif field.upper()=="ALLERGIC MEDICATIONS":
-                    execute2="Update Emergency set Allergic_Medications=? where Patient_ID=?"
-                    try:    
-                        cur.execute(execute2,t1)
-                    except sqlite3.Error:
-                        print("P.A.N.D.A : An unexpected error has occured")
-                        print("P.A.N.D.A : Please check the values again") 
-                    else:    
-                        break
-                elif count1==3:
-                    print("P.A.N.D.A : Please try using 'Help' command.")
+            column=columns.get(field.upper())
+            if column is None:
+                print("P.A.N.D.A : Error !")
+                print("P.A.N.D.A : Please try using 'Help' command.")
+            else:
+                try:
+                    update("Emergency", column, new, "Patient_ID", patient_ID)
+                except sqlite3.Error:
+                    print("P.A.N.D.A : An unexpected error has occured")
+                    print("P.A.N.D.A : Please check the values again")
                 else:
-                    print("P.A.N.D.A : Error !")
-                    count1+=1
-            conobj.commit()
-            header=["Patient_ID","Name","Age","Blood_Group","Chronic Disease","Doctor Name","Doctor Phone","Allergic Medications"]
-            cur.execute("select* from Emergency order by Patient_ID")
-            r5=cur.fetchall()
-            print(tabulate(r5,headers=header,tablefmt="grid"))
+                    Emergency()
         print()
     def Medicine():
         cur.execute("select* from Medicine")
